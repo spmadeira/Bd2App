@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace Bd2App
         private float overflowPct;
         private float collisionPct;
         private float accessCount;
+        private float hashDuration;
         
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
@@ -50,12 +52,15 @@ namespace Bd2App
             StatisticsPanel.Visibility = Visibility.Visible;
             OverflowLabel.Content = $"{overflowPct:0.######}%";
             CollisionLabel.Content = $"{collisionPct:0.######}%";
-            AccessLabel.Content = $"{accessCount: #.##}";
+            AccessLabel.Content = $"{accessCount:#.##}";
+            TimeLabel.Content = $"{hashDuration:0.####}s";
             PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
         }
 
         private void WorkerOnDoWork(object sender, DoWorkEventArgs e)
         {
+            var sw = Stopwatch.StartNew();
+            
             dynamic arg = e.Argument;
 
             var lines = File.ReadAllLines((string) arg.Path);
@@ -111,15 +116,13 @@ namespace Bd2App
 
             overflowPct = ((float)storage.overflowCount / lines.Length * 100);
             collisionPct = ((float)storage.collisionCount / lines.Length * 100);
-            // accessCount = (float) storage.Array
-            //     .Where(b => b.First != null)
-            //     .Select(b => b.Length())
-            //     .Sum() / lines.Length;
-
+            
             var usedBuckets = storage.Array.Where(b => b.First != null).ToArray();
             var totalUsedBucketLength = usedBuckets.Sum(b => b.Length());
             var averageLength = (float) totalUsedBucketLength / usedBuckets.Length;
             accessCount = averageLength;
+            sw.Stop();
+            hashDuration = (float)sw.ElapsedMilliseconds/1000;
             
             currentIndex = 0;
         }
@@ -153,7 +156,8 @@ namespace Bd2App
         {
             if (!int.TryParse(PageCounter.Text, out var pageCount))
             {
-                DialogHost.Show("Invalid Page Count");
+                // DialogHost.Show("Invalid Page Count");
+                MessageBox.Show(this, "Invalid Page Count", "Error", MessageBoxButton.OK);
                 return;
             }
 

@@ -122,6 +122,7 @@
                             <RowDefinition Height="40"/>
                             <RowDefinition Height="40"/>
                             <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
                         </Grid.RowDefinitions>
                         <Label
                             FontFamily="{materialDesign:MaterialDesignFont}"
@@ -137,11 +138,18 @@
                             Overflow:
                         </Label>
                         <Label
-                            Grid.Row="3"
+                            Grid.Row="2"
                             FontFamily="{materialDesign:MaterialDesignFont}"
                             VerticalAlignment="Center"
                             FontSize="16">
                             Acessos:
+                        </Label>
+                        <Label
+                            Grid.Row="3"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            FontSize="16">
+                            Tempo:
                         </Label>
                         <Label
                             x:Name="CollisionLabel"
@@ -170,7 +178,17 @@
                             VerticalAlignment="Center"
                             HorizontalContentAlignment="Right"
                             FontSize="16">
-                            14%
+                            2.1
+                        </Label>
+                        <Label
+                            x:Name="TimeLabel"
+                            Grid.Column="1"
+                            Grid.Row="3"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            HorizontalContentAlignment="Right"
+                            FontSize="16">
+                            2.5s
                         </Label>
                     </Grid>
                 </StackPanel>

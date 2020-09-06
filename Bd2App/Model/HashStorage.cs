@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-//TODO: Add Fixed Bucket Size mode, add statistics
 public class HashStorage<TKey, TValue>
 {
     public Bucket<TKey, TValue>[] Array { get; set; }
