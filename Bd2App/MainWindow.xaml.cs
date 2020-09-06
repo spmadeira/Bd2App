@@ -88,7 +88,7 @@ namespace Bd2App
                     reps.Add(new BucketRepresentation
                     {
                         Bucket = i,
-                        HashValue = (int) Hasher.Hash(entry.Key),
+                        HashValue = Hasher.Hash(entry.Key),
                         BucketIndex = counter++,
                         Word = entry.Value
                     });
@@ -186,7 +186,7 @@ namespace Bd2App
 
         public class BucketRepresentation
         {
-            public int HashValue { get; set; }
+            public uint HashValue { get; set; }
             public int Bucket { get; set; }
             public int BucketIndex { get; set; }
             public string Word { get; set; } 
