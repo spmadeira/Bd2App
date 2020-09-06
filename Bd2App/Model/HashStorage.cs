@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-//TODO: Refazer parte, ver como guardar um endereço que sempre é válido mesmo com os Rehashes
-//Dar uma olhada primeiro no pdf pra ver se não entra em conflito com nada
-
 public class HashStorage<TKey, TValue>
 {
     public Bucket<TKey, TValue>[] Array { get; set; }

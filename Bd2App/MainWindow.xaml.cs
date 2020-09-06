@@ -27,6 +27,13 @@ namespace Bd2App
             InitializeComponent();
             _worker.DoWork += WorkerOnDoWork;
             _worker.RunWorkerCompleted += WorkerOnRunWorkerCompleted;
+            _worker.WorkerReportsProgress = true;
+            _worker.ProgressChanged += WorkerOnProgressChanged;
+        }
+
+        private void WorkerOnProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            ProgressBar.Value = e.ProgressPercentage;
         }
 
         private void WorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -34,6 +41,7 @@ namespace Bd2App
             DataGrid.ItemsSource = bucketRepresentations[currentIndex];
             DataGrid.Visibility = Visibility.Visible;
             LoadingIcon.Visibility = Visibility.Hidden;
+            ProgressBar.Visibility = Visibility.Hidden;
             PageControls.Visibility = Visibility.Visible;
             PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
         }
@@ -41,21 +49,36 @@ namespace Bd2App
         private void WorkerOnDoWork(object sender, DoWorkEventArgs e)
         {
             dynamic arg = e.Argument;
+
+            var lines = File.ReadAllLines((string) arg.Path);
+            var storage = new HashStorage<string, string>((int) arg.Pages, false);
+            // foreach (var line in lines)
+            // {
+            //     if (string.IsNullOrWhiteSpace(line)) continue;
+            //     storage.Store(line, line);
+            // }
+
+            int progress = 0;
             
-            var lines = File.ReadAllLines((string)arg.Path);
-            var storage = new HashStorage<string, string>((int)arg.Pages, false);
-            foreach (var line in lines)
+            for (int i = 0; i < lines.Length; i++)
             {
+                var line = lines[i];
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 storage.Store(line, line);
+                var p = (int)((float) i / lines.Length * 50);
+                if (p > progress)
+                {
+                    progress = p;
+                    _worker.ReportProgress(progress);
+                }
             }
-            
+
             bucketRepresentations = new List<List<BucketRepresentation>>();
-            
+
             for (int i = 0; i < storage.Array.Length; i++)
             {
                 var reps = new List<BucketRepresentation>();
-            
+
                 var bucket = storage.Array[i];
                 var counter = 0;
                 var entry = bucket.First;
@@ -65,16 +88,23 @@ namespace Bd2App
                     reps.Add(new BucketRepresentation
                     {
                         Bucket = i,
-                        HashValue = (int)Hasher.Hash(entry.Key),
+                        HashValue = (int) Hasher.Hash(entry.Key),
                         BucketIndex = counter++,
                         Word = entry.Value
                     });
                     entry = entry.Next;
                 }
-            
+
                 bucketRepresentations.Add(reps);
+                
+                var p = 50 + (int) ((float) i / lines.Length * 50);
+                if (p > progress)
+                {
+                    progress = p;
+                    _worker.ReportProgress(progress);
+                }
             }
-            
+
             currentIndex = 0;
         }
 
@@ -106,12 +136,18 @@ namespace Bd2App
         private void LoadFile_Click(object sender, RoutedEventArgs e)
         {
             if (!int.TryParse(PageCounter.Text, out var pageCount))
+            {
                 DialogHost.Show("Invalid Page Count");
-            
+                return;
+            }
+
             var ofd = new OpenFileDialog();
             if (ofd.ShowDialog() == true)
             {
                 LoadingIcon.Visibility = Visibility.Visible;
+                PageControls.Visibility = Visibility.Hidden;
+                DataGrid.Visibility = Visibility.Hidden;
+                ProgressBar.Visibility = Visibility.Visible;
                 _worker.RunWorkerAsync(new
                 {
                     Path = ofd.FileName,

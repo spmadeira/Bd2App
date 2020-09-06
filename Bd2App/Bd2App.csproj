@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D0CF6E5C-9511-4071-B721-10C6258ADA88}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>Bd2App</RootNamespace>
     <AssemblyName>Bd2App</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
