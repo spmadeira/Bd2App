@@ -7,7 +7,13 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
         xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="1024" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True">
+        Title="MainWindow" 
+        Height="600" 
+        Width="1024" 
+        WindowStyle="None" 
+        ResizeMode="NoResize" 
+        AllowsTransparency="True"
+        WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>

@@ -156,8 +156,6 @@ namespace Bd2App
         {
             if (!int.TryParse(PageCounter.Text, out var pageCount))
             {
-                // DialogHost.Show("Invalid Page Count");
-                MessageBox.Show(this, "Invalid Page Count", "Error", MessageBoxButton.OK);
                 return;
             }
 
