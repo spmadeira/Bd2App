@@ -56,7 +56,7 @@
             Grid.Row="0">
             App BD2
         </Label>
-        <Grid Grid.Column="0" Grid.Row="1" Grid.RowSpan="2" Background="#FF78909C">
+        <Grid Grid.Column="0" Grid.Row="1" Grid.RowSpan="2" Background="#FF657076">
             <StackPanel Margin="0 10 0 0">
                 <Button 
                     Click="LoadFile_Click"
@@ -73,11 +73,26 @@
                         <Label Grid.Column="1" FontFamily="{materialDesign:MaterialDesignFont}" VerticalAlignment="Center">Abrir Arquivo</Label>
                     </Grid>
                 </Button>
-                <Label 
+                <!--<Label 
                         Margin="5 0 0 0"
                         Style="{StaticResource MaterialDesignLabel}"
                         FontFamily="{materialDesign:MaterialDesignFont}"
-                        FontSize="16">Quantidade de Páginas:</Label>
+                        FontSize="16">Quantidade de Páginas:</Label>-->
+                <ComboBox
+                    x:Name="HashModeComboBox"
+                    Margin="10 0 10 0"
+                    SelectedIndex="0"
+                    FontSize="16"
+                    FontFamily="{materialDesign:MaterialDesignFont}">
+                    <ComboBoxItem
+                        FontFamily="{materialDesign:MaterialDesignFont}">
+                        Quantidade de Páginas
+                    </ComboBoxItem>
+                    <ComboBoxItem
+                        FontFamily="{materialDesign:MaterialDesignFont}">
+                        Tamanho dos Buckets
+                    </ComboBoxItem>
+                </ComboBox>
                 <TextBox 
                     PreviewTextInput="PageCounter_PreviewTextInput"
                     DataObject.Pasting="PageCounter_Pasting"
@@ -85,6 +100,81 @@
                     FontSize="18"
                     FontFamily="{StaticResource MaterialDesignFont}"
                     Margin="10 0 10 5"/>
+                <Separator
+                    Margin="10 15 10 0"/>
+                <StackPanel
+                    x:Name="StatisticsPanel"
+                    Visibility="Hidden">
+                    <Label
+                        FontFamily="{materialDesign:MaterialDesignFont}"
+                        Margin="10 5 10 0"
+                        FontWeight="DemiBold"
+                        HorizontalContentAlignment="Center"
+                        FontSize="18">
+                        Estatísticas
+                    </Label>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                        </Grid.RowDefinitions>
+                        <Label
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            FontSize="16">
+                            Colisões:
+                        </Label>
+                        <Label
+                            Grid.Row="1"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            FontSize="16">
+                            Overflow:
+                        </Label>
+                        <Label
+                            Grid.Row="3"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            FontSize="16">
+                            Acessos:
+                        </Label>
+                        <Label
+                            x:Name="CollisionLabel"
+                            Grid.Column="1"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            HorizontalContentAlignment="Right"
+                            FontSize="16">
+                            18%
+                        </Label>
+                        <Label
+                            x:Name="OverflowLabel"
+                            Grid.Column="1"
+                            Grid.Row="1"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            HorizontalContentAlignment="Right"
+                            FontSize="16">
+                            14%
+                        </Label>
+                        <Label
+                            x:Name="AccessLabel"
+                            Grid.Column="1"
+                            Grid.Row="2"
+                            FontFamily="{materialDesign:MaterialDesignFont}"
+                            VerticalAlignment="Center"
+                            HorizontalContentAlignment="Right"
+                            FontSize="16">
+                            14%
+                        </Label>
+                    </Grid>
+                </StackPanel>
+                
             </StackPanel>
         </Grid>
         <DataGrid

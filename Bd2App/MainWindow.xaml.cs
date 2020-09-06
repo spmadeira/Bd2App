@@ -19,6 +19,10 @@ namespace Bd2App
     {
         public List<List<BucketRepresentation>> bucketRepresentations;
         public int currentIndex;
+
+        private float overflowPct;
+        private float collisionPct;
+        private float accessCount;
         
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
@@ -43,6 +47,10 @@ namespace Bd2App
             LoadingIcon.Visibility = Visibility.Hidden;
             ProgressBar.Visibility = Visibility.Hidden;
             PageControls.Visibility = Visibility.Visible;
+            StatisticsPanel.Visibility = Visibility.Visible;
+            OverflowLabel.Content = $"{overflowPct:0.######}%";
+            CollisionLabel.Content = $"{collisionPct:0.######}%";
+            AccessLabel.Content = $"{accessCount: #.##}";
             PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
         }
 
@@ -51,13 +59,16 @@ namespace Bd2App
             dynamic arg = e.Argument;
 
             var lines = File.ReadAllLines((string) arg.Path);
-            var storage = new HashStorage<string, string>((int) arg.Pages, false);
-            // foreach (var line in lines)
-            // {
-            //     if (string.IsNullOrWhiteSpace(line)) continue;
-            //     storage.Store(line, line);
-            // }
+            
+            HashStorage<string, string> storage;
 
+            int mode = (int) arg.Mode;
+            
+            if (mode == 0)
+                storage = new HashStorage<string, string>((int) arg.Pages);
+            else
+                storage = new HashStorage<string, string>(lines.Length, (int) arg.Pages); 
+            
             int progress = 0;
             
             for (int i = 0; i < lines.Length; i++)
@@ -65,7 +76,7 @@ namespace Bd2App
                 var line = lines[i];
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 storage.Store(line, line);
-                var p = (int)((float) i / lines.Length * 50);
+                var p = (int)((float) i / lines.Length * 100);
                 if (p > progress)
                 {
                     progress = p;
@@ -96,15 +107,20 @@ namespace Bd2App
                 }
 
                 bucketRepresentations.Add(reps);
-                
-                var p = 50 + (int) ((float) i / lines.Length * 50);
-                if (p > progress)
-                {
-                    progress = p;
-                    _worker.ReportProgress(progress);
-                }
             }
 
+            overflowPct = ((float)storage.overflowCount / lines.Length * 100);
+            collisionPct = ((float)storage.collisionCount / lines.Length * 100);
+            // accessCount = (float) storage.Array
+            //     .Where(b => b.First != null)
+            //     .Select(b => b.Length())
+            //     .Sum() / lines.Length;
+
+            var usedBuckets = storage.Array.Where(b => b.First != null).ToArray();
+            var totalUsedBucketLength = usedBuckets.Sum(b => b.Length());
+            var averageLength = (float) totalUsedBucketLength / usedBuckets.Length;
+            accessCount = averageLength;
+            
             currentIndex = 0;
         }
 
@@ -147,11 +163,13 @@ namespace Bd2App
                 LoadingIcon.Visibility = Visibility.Visible;
                 PageControls.Visibility = Visibility.Hidden;
                 DataGrid.Visibility = Visibility.Hidden;
+                StatisticsPanel.Visibility = Visibility.Hidden;
                 ProgressBar.Visibility = Visibility.Visible;
                 _worker.RunWorkerAsync(new
                 {
                     Path = ofd.FileName,
-                    Pages = pageCount
+                    Pages = pageCount,
+                    Mode = HashModeComboBox.SelectedIndex
                 });
             }
         }
