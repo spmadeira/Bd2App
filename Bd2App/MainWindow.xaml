@@ -24,35 +24,6 @@
             <RowDefinition Height="541*"/>
             <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
-        <Grid 
-            Grid.Column="0" 
-            ColumnSpan="2" 
-            Grid.Row="0" 
-            Background="#FF03A9F4"
-            MouseDown="TitleBar_MouseDown">
-            <Grid.Effect>
-                <DropShadowEffect ShadowDepth="2"></DropShadowEffect>
-            </Grid.Effect>
-            <StackPanel 
-                Orientation="Horizontal"
-                HorizontalAlignment="Right"
-                Margin="10,0">
-                <Button
-                    x:Name="CloseButton"
-                    Click="CloseButton_Click"
-                    Style="{StaticResource MaterialDesignFloatingActionMiniAccentButton}"
-                    Width="25"
-                    Height="25"
-                    Background="{x:Null}"
-                    BorderBrush="{x:Null}"
-                    Foreground="Black">
-                    <materialDesign:PackIcon 
-                        Kind="Close"
-                        Width="25"
-                        Height="25"/>
-                </Button>
-            </StackPanel>
-        </Grid>
         <Label
             VerticalAlignment="Center"
             FontFamily="{materialDesign:MaterialDesignFont}"
@@ -265,6 +236,35 @@
                         Icon="ArrowRight"
                         Width="24"
                         Height="24"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+        <Grid 
+            Grid.Column="0" 
+            ColumnSpan="2" 
+            Grid.Row="0" 
+            Background="#FF03A9F4"
+            MouseDown="TitleBar_MouseDown">
+            <Grid.Effect>
+                <DropShadowEffect ShadowDepth="2"></DropShadowEffect>
+            </Grid.Effect>
+            <StackPanel 
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="10,0">
+                <Button
+                    x:Name="CloseButton"
+                    Click="CloseButton_Click"
+                    Style="{StaticResource MaterialDesignFloatingActionMiniAccentButton}"
+                    Width="25"
+                    Height="25"
+                    Background="{x:Null}"
+                    BorderBrush="{x:Null}"
+                    Foreground="Black">
+                    <materialDesign:PackIcon 
+                        Kind="Close"
+                        Width="25"
+                        Height="25"/>
                 </Button>
             </StackPanel>
         </Grid>
