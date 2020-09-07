@@ -45,6 +45,8 @@ namespace Bd2App
         private void WorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             DataGrid.ItemsSource = bucketRepresentations[currentIndex];
+            PrevPageButton.IsEnabled = false;
+            NextPageButton.IsEnabled = true;
             DataGrid.Visibility = Visibility.Visible;
             LoadingIcon.Visibility = Visibility.Hidden;
             ProgressBar.Visibility = Visibility.Hidden;
