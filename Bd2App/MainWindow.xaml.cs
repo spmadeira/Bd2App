@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -18,14 +19,10 @@ namespace Bd2App
     /// </summary>
     public partial class MainWindow
     {
-        public List<List<BucketRepresentation>> bucketRepresentations;
-        public int currentIndex;
+        public DataMode CurrentData;
+        public HashStorage<Address> Storage;
+        public PageTable<string> PageTable;
 
-        private float overflowPct;
-        private float collisionPct;
-        private float accessCount;
-        private float hashDuration;
-        
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
         public MainWindow()
@@ -35,6 +32,10 @@ namespace Bd2App
             _worker.RunWorkerCompleted += WorkerOnRunWorkerCompleted;
             _worker.WorkerReportsProgress = true;
             _worker.ProgressChanged += WorkerOnProgressChanged;
+
+            DataGrid.Visibility = Visibility.Hidden;
+            StatisticsPanel.Visibility = Visibility.Hidden;
+            
         }
 
         private void WorkerOnProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -44,89 +45,142 @@ namespace Bd2App
 
         private void WorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            DataGrid.ItemsSource = bucketRepresentations[currentIndex];
-            PrevPageButton.IsEnabled = false;
-            NextPageButton.IsEnabled = true;
-            DataGrid.Visibility = Visibility.Visible;
+            var hashResult = (HashResult) e.Result;
             LoadingIcon.Visibility = Visibility.Hidden;
             ProgressBar.Visibility = Visibility.Hidden;
-            PageControls.Visibility = Visibility.Visible;
+            DataGrid.Visibility = Visibility.Visible;
             StatisticsPanel.Visibility = Visibility.Visible;
-            OverflowLabel.Content = $"{overflowPct:0.######}%";
-            CollisionLabel.Content = $"{collisionPct:0.######}%";
-            AccessLabel.Content = $"{accessCount:#.##}";
-            TimeLabel.Content = $"{hashDuration:0.####}s";
-            PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
+            PageDataGrid.ItemsSource = hashResult.PageRepresentations;
+            BucketDataGrid.ItemsSource = hashResult.BucketRepresentations;
+            Storage = hashResult.Storage;
+            PageTable = hashResult.PageTable;
+            OverflowLabel.Content = $"{hashResult.overflowPct:0.######}%";
+            CollisionLabel.Content = $"{hashResult.collisionsPct:0.######}%";
+            AccessLabel.Content = $"{hashResult.avgAccess:#.##}";
+
+
+            // PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
+            // PrevPageButton.IsEnabled = false;
+            // NextPageButton.IsEnabled = true;
+            // PageDataGrid.Visibility = Visibility.Visible;
+            // LoadingIcon.Visibility = Visibility.Hidden;
+            // ProgressBar.Visibility = Visibility.Hidden;
+            // PageControls.Visibility = Visibility.Visible;
+            // StatisticsPanel.Visibility = Visibility.Visible;
+            // OverflowLabel.Content = $"{overflowPct:0.######}%";
+            // CollisionLabel.Content = $"{collisionPct:0.######}%";
+            // AccessLabel.Content = $"{accessCount:#.##}";
+            // TimeLabel.Content = $"{hashDuration:0.####}s";
+            // PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
         }
 
         private void WorkerOnDoWork(object sender, DoWorkEventArgs e)
         {
-            var sw = Stopwatch.StartNew();
-            
-            dynamic arg = e.Argument;
+            var hashargs = (HashArgs)e.Argument;
 
-            var lines = File.ReadAllLines((string) arg.Path);
-            
-            HashStorage<string, string> storage;
+            var lines = File.ReadLines(hashargs.Path).ToArray();
 
-            int mode = (int) arg.Mode;
-            
-            if (mode == 0)
-                storage = new HashStorage<string, string>((int) arg.Pages);
-            else
-                storage = new HashStorage<string, string>(lines.Length, (int) arg.Pages); 
-            
+            int pageCount;
+            int pageSize;
             int progress = 0;
+
+            if (hashargs.Choice == HashArgs.InputChoice.PageCount)
+            {
+                pageCount = hashargs.Input;
+                pageSize = (int) Math.Ceiling((decimal) ((float)lines.Length / pageCount));
+            }
+            else
+            {
+                pageSize = hashargs.Input;
+                pageCount = (int) Math.Ceiling((decimal) ((float)lines.Length / pageSize));
+            }
+            
+            var pageTable = new PageTable<string>(pageCount, pageSize);
+            var hashStorage = new HashStorage<Address>(hashargs.BucketCount, hashargs.BucketSize);
+            
+            var pageRepresentations = new List<PageRepresentation>();
+            var bucketRepresentations = new List<BucketRepresentation>();
             
             for (int i = 0; i < lines.Length; i++)
             {
-                var line = lines[i];
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                storage.Store(line, line);
-                var p = (int)((float) i / lines.Length * 100);
+                var p = i*100 / lines.Length;
                 if (p > progress)
                 {
                     progress = p;
                     _worker.ReportProgress(progress);
                 }
+                var address = pageTable.Insert(lines[i]);
+                pageRepresentations.Add(new PageRepresentation
+                {
+                    Page = address.Page+1,
+                    Line = address.Line+1,
+                    Index = i,
+                    Text = lines[i]
+                });
+                hashStorage.Insert(lines[i], address);
             }
 
-            bucketRepresentations = new List<List<BucketRepresentation>>();
+            var buckets = hashStorage.Buckets;
 
-            for (int i = 0; i < storage.Array.Length; i++)
+            string buildContent(HashStorage<Address>.Entry[] entries)
             {
-                var reps = new List<BucketRepresentation>();
+                var res = "[";
 
-                var bucket = storage.Array[i];
-                var counter = 0;
-                var entry = bucket.First;
-
-                while (entry != null)
+                for (int i = 0; i < entries.Length; i++)
                 {
-                    reps.Add(new BucketRepresentation
+                    if (entries[i] != null)
                     {
-                        Bucket = i,
-                        HashValue = Hasher.Hash(entry.Key),
-                        BucketIndex = counter++,
-                        Word = entry.Value
-                    });
-                    entry = entry.Next;
+                        res += $"{entries[i].key}-P{entries[i].value.Page+1}L{entries[i].value.Line+1}";
+                    }
+                    
+                    if (i != entries.Length - 1)
+                        res += ",";
                 }
 
-                bucketRepresentations.Add(reps);
+                return res + "]";
             }
 
-            overflowPct = ((float)storage.overflowCount / lines.Length * 100);
-            collisionPct = ((float)storage.collisionCount / lines.Length * 100);
-            
-            var usedBuckets = storage.Array.Where(b => b.First != null).ToArray();
-            var totalUsedBucketLength = usedBuckets.Sum(b => b.Length());
-            var averageLength = (float) totalUsedBucketLength / usedBuckets.Length;
-            accessCount = averageLength;
-            sw.Stop();
-            hashDuration = (float)sw.ElapsedMilliseconds/1000;
-            
-            currentIndex = 0;
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                int counter = 0;
+                var bucket = buckets[i];
+                while (bucket != null)
+                {
+                    bucketRepresentations.Add(new BucketRepresentation
+                    {
+                        BucketID = $"{i}-{counter}",
+                        Content = buildContent(bucket.Entries),
+                        Overflow = bucket.Next != null ? $"{i}-{counter+1}": ""
+                    });
+                    bucket = bucket.Next;
+                    counter++;
+                }
+            }
+
+            var collisionPct = (float)hashStorage.collisionCount * 100 / lines.Length;
+            var overflowPct = (float)hashStorage.Buckets.Aggregate(0, (i, b) =>
+           {
+               if (b.Next != null)
+                   return i + 1;
+               return i;
+           }) * 100 / hashStorage.Buckets.Length;
+            // var avgAccess = (float)hashStorage.Buckets
+            //     .Where(b => !b.Empty)
+            //     .Sum(b => b.Count()) / hashStorage.Buckets.Length + 1;
+            var usedBuckets = hashStorage.Buckets.Where(b => !b.Empty).ToArray();
+            var avgAccess = (float) usedBuckets
+                .Sum(b => b.Count()) / usedBuckets.Count();
+
+            e.Result = new HashResult
+            {
+                PageRepresentations = pageRepresentations,
+                BucketRepresentations = bucketRepresentations,
+                Storage = hashStorage,
+                PageTable = pageTable,
+                collisionsPct = collisionPct,
+                overflowPct = overflowPct,
+                avgAccess = avgAccess
+            };
         }
 
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
@@ -134,12 +188,12 @@ namespace Bd2App
             this.DragMove();
         }
 
-        private void PageCounter_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void Numerical_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             e.Handled = !int.TryParse(e.Text, out var _);
         }
 
-        private void PageCounter_Pasting(object sender, DataObjectPastingEventArgs e)
+        private void Numerical_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (e.DataObject.GetDataPresent(typeof(string)))
             {
@@ -156,62 +210,141 @@ namespace Bd2App
 
         private void LoadFile_Click(object sender, RoutedEventArgs e)
         {
-            if (!int.TryParse(PageCounter.Text, out var pageCount))
+            if (!int.TryParse(PageCounter.Text, out var pageInput) ||
+                !int.TryParse(BucketCount.Text, out var bucketCount) ||
+                !int.TryParse(BucketSize.Text, out var bucketSize))
             {
                 return;
             }
-
+            
             var ofd = new OpenFileDialog();
             if (ofd.ShowDialog() == true)
             {
                 LoadingIcon.Visibility = Visibility.Visible;
-                PageControls.Visibility = Visibility.Hidden;
                 DataGrid.Visibility = Visibility.Hidden;
                 StatisticsPanel.Visibility = Visibility.Hidden;
                 ProgressBar.Visibility = Visibility.Visible;
-                _worker.RunWorkerAsync(new
+                _worker.RunWorkerAsync(new HashArgs
                 {
-                    Path = ofd.FileName,
-                    Pages = pageCount,
-                    Mode = HashModeComboBox.SelectedIndex
+                    BucketCount = bucketCount,
+                    BucketSize = bucketSize,
+                    Choice = HashModeComboBox.SelectedIndex == 0 ? HashArgs.InputChoice.PageCount : HashArgs.InputChoice.PageSize,
+                    Input = pageInput,
+                    Path = ofd.FileName
                 });
             }
         }
 
         private void PrevPageButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentIndex > 0)
-            {
-                currentIndex--;
-                if (currentIndex == 0)
-                    PrevPageButton.IsEnabled = false;
-                if (!NextPageButton.IsEnabled)
-                    NextPageButton.IsEnabled = true;
-                DataGrid.ItemsSource = bucketRepresentations[currentIndex];
-                PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
-            }
+            // if (currentIndex > 0)
+            // {
+            //     currentIndex--;
+            //     if (currentIndex == 0)
+            //         PrevPageButton.IsEnabled = false;
+            //     if (!NextPageButton.IsEnabled)
+            //         NextPageButton.IsEnabled = true;
+            //     PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
+            //     PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
+            // }
         }
 
         private void NextPageButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentIndex < bucketRepresentations.Count)
-            {
-                currentIndex++;
-                if (currentIndex == bucketRepresentations.Count-1)
-                    NextPageButton.IsEnabled = false;
-                if (!PrevPageButton.IsEnabled)
-                    PrevPageButton.IsEnabled = true;
-                DataGrid.ItemsSource = bucketRepresentations[currentIndex];
-                PageLabel.Content = $"{currentIndex+1}/{bucketRepresentations.Count}";
-            }
+            // if (currentIndex < PageRepresentations.Count)
+            // {
+            //     currentIndex++;
+            //     if (currentIndex == PageRepresentations.Count-1)
+            //         NextPageButton.IsEnabled = false;
+            //     if (!PrevPageButton.IsEnabled)
+            //         PrevPageButton.IsEnabled = true;
+            //     PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
+            //     PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
+            // }
+        }
+
+        public class PageRepresentation
+        {
+            public int Index { get; set; }
+            public int Page { get; set; }
+            public int Line { get; set; }
+            public string Text { get; set; }
         }
 
         public class BucketRepresentation
         {
-            public uint HashValue { get; set; }
-            public int Bucket { get; set; }
-            public int BucketIndex { get; set; }
-            public string Word { get; set; } 
+            public string BucketID { get; set; }
+            public string Content { get; set; }
+            public string Overflow { get; set; }
+        }
+
+        public enum DataMode { Pages, Bucket }
+        
+        public class HashArgs
+        {
+            public enum InputChoice
+            {
+                PageSize,
+                PageCount
+            }
+
+            public string Path;
+            public InputChoice Choice;
+            public int Input;
+            public int BucketCount;
+            public int BucketSize;
+        }
+
+        public class HashResult
+        {
+            public List<PageRepresentation> PageRepresentations;
+            public List<BucketRepresentation> BucketRepresentations;
+            public HashStorage<Address> Storage;
+            public PageTable<string> PageTable;
+            public float collisionsPct;
+            public float overflowPct;
+            public float avgAccess;
+        }
+
+        private void ToPages_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentData == DataMode.Pages)
+                return;
+
+            CurrentData = DataMode.Pages;
+            Transitioner.SelectedIndex = 0;
+        }
+
+        private void ToBuckets_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentData == DataMode.Bucket)
+                return;
+
+            CurrentData = DataMode.Bucket;
+            Transitioner.SelectedIndex = 1;
+        }
+
+        private void SearchClick(object sender, RoutedEventArgs e)
+        {
+            Address address;
+
+            try
+            {
+                address = Storage.Retrieve(IndexSearch.Text);
+            }
+            catch (KeyNotFoundException knfe)
+            {
+                return;
+            }
+
+            if (CurrentData != DataMode.Pages)
+            {
+                CurrentData = DataMode.Pages;
+                Transitioner.SelectedIndex = 0;
+            }
+
+            var item = ((List<PageRepresentation>)PageDataGrid.ItemsSource).FirstOrDefault(i => (i.Page == address.Page + 1 && i.Line == address.Line + 1));
+            PageDataGrid.ScrollIntoView(item);
         }
     }
 }

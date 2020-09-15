@@ -19,6 +19,9 @@
 
         return hash;
     }
+    
+    //Knuth Hash
+    public static uint Hash(int entry) => (uint)((uint)entry*2654435761%4294967296); 
 
     public static int GetPrime(int val)
     {
