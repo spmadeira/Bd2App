@@ -4,7 +4,7 @@ using System;
 
 public class PageTable<T>
 {
-    private PageElement[] Pages;
+    public PageElement[] Pages;
 
     public int pageSize;
 

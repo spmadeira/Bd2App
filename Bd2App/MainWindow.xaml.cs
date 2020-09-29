@@ -85,7 +85,10 @@ namespace Bd2App
             
             var pageTable = new PageTable<string>(pageCount, pageSize);
             var hashStorage = new HashStorage<Address>(hashargs.BucketCount, hashargs.BucketSize);
-            
+
+            for (int i = 0; i < pageTable.Pages.Length; i++)
+                Pages.Add(new List<PageRepresentation>());
+
             var pageRepresentations = new List<PageRepresentation>();
             var bucketRepresentations = new List<BucketRepresentation>();
             
@@ -311,10 +314,10 @@ namespace Bd2App
             // var item = ((List<PageRepresentation>)PageDataGrid.ItemsSource).FirstOrDefault(i => (i.Page == address.Page + 1 && i.Line == address.Line + 1));
             // PageDataGrid.ScrollIntoView(item);
 
-            var page = Pages[address.Page - 1]; //De indice 1 pra indice 0
+            var page = Pages[address.Page]; //De indice 1 pra indice 0
             foreach (var word in page)
             {
-                if (word.Text.ToLower() == IndexSearch.Text.ToLower())
+                if (String.Equals(word.Text, IndexSearch.Text, StringComparison.CurrentCultureIgnoreCase))
                     PageDataGrid.ScrollIntoView(word);
             }
         }
