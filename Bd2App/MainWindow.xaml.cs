@@ -22,6 +22,9 @@ namespace Bd2App
         public DataMode CurrentData;
         public HashStorage<Address> Storage;
         public PageTable<string> PageTable;
+        
+        public List<List<PageRepresentation>> Pages 
+            = new List<List<PageRepresentation>>();
 
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
@@ -57,21 +60,6 @@ namespace Bd2App
             OverflowLabel.Content = $"{hashResult.overflowPct:0.######}%";
             CollisionLabel.Content = $"{hashResult.collisionsPct:0.######}%";
             AccessLabel.Content = $"{hashResult.avgAccess:#.##}";
-
-
-            // PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
-            // PrevPageButton.IsEnabled = false;
-            // NextPageButton.IsEnabled = true;
-            // PageDataGrid.Visibility = Visibility.Visible;
-            // LoadingIcon.Visibility = Visibility.Hidden;
-            // ProgressBar.Visibility = Visibility.Hidden;
-            // PageControls.Visibility = Visibility.Visible;
-            // StatisticsPanel.Visibility = Visibility.Visible;
-            // OverflowLabel.Content = $"{overflowPct:0.######}%";
-            // CollisionLabel.Content = $"{collisionPct:0.######}%";
-            // AccessLabel.Content = $"{accessCount:#.##}";
-            // TimeLabel.Content = $"{hashDuration:0.####}s";
-            // PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
         }
 
         private void WorkerOnDoWork(object sender, DoWorkEventArgs e)
@@ -110,13 +98,20 @@ namespace Bd2App
                     _worker.ReportProgress(progress);
                 }
                 var address = pageTable.Insert(lines[i]);
-                pageRepresentations.Add(new PageRepresentation
+
+
+
+                var rep = new PageRepresentation
                 {
-                    Page = address.Page+1,
-                    Line = address.Line+1,
+                    Page = address.Page + 1,
+                    Line = address.Line + 1,
                     Index = i,
                     Text = lines[i]
-                });
+                };
+                
+                Pages[address.Page].Add(rep);
+
+                pageRepresentations.Add(rep);
                 hashStorage.Insert(lines[i], address);
             }
 
@@ -164,9 +159,7 @@ namespace Bd2App
                    return i + 1;
                return i;
            }) * 100 / hashStorage.Buckets.Length;
-            // var avgAccess = (float)hashStorage.Buckets
-            //     .Where(b => !b.Empty)
-            //     .Sum(b => b.Count()) / hashStorage.Buckets.Length + 1;
+
             var usedBuckets = hashStorage.Buckets.Where(b => !b.Empty).ToArray();
             var avgAccess = (float) usedBuckets
                 .Sum(b => b.Count()) / usedBuckets.Count();
@@ -233,34 +226,6 @@ namespace Bd2App
                     Path = ofd.FileName
                 });
             }
-        }
-
-        private void PrevPageButton_Click(object sender, RoutedEventArgs e)
-        {
-            // if (currentIndex > 0)
-            // {
-            //     currentIndex--;
-            //     if (currentIndex == 0)
-            //         PrevPageButton.IsEnabled = false;
-            //     if (!NextPageButton.IsEnabled)
-            //         NextPageButton.IsEnabled = true;
-            //     PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
-            //     PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
-            // }
-        }
-
-        private void NextPageButton_Click(object sender, RoutedEventArgs e)
-        {
-            // if (currentIndex < PageRepresentations.Count)
-            // {
-            //     currentIndex++;
-            //     if (currentIndex == PageRepresentations.Count-1)
-            //         NextPageButton.IsEnabled = false;
-            //     if (!PrevPageButton.IsEnabled)
-            //         PrevPageButton.IsEnabled = true;
-            //     PageDataGrid.ItemsSource = PageRepresentations[currentIndex];
-            //     PageLabel.Content = $"{currentIndex+1}/{PageRepresentations.Count}";
-            // }
         }
 
         public class PageRepresentation
@@ -343,8 +308,15 @@ namespace Bd2App
                 Transitioner.SelectedIndex = 0;
             }
 
-            var item = ((List<PageRepresentation>)PageDataGrid.ItemsSource).FirstOrDefault(i => (i.Page == address.Page + 1 && i.Line == address.Line + 1));
-            PageDataGrid.ScrollIntoView(item);
+            // var item = ((List<PageRepresentation>)PageDataGrid.ItemsSource).FirstOrDefault(i => (i.Page == address.Page + 1 && i.Line == address.Line + 1));
+            // PageDataGrid.ScrollIntoView(item);
+
+            var page = Pages[address.Page - 1]; //De indice 1 pra indice 0
+            foreach (var word in page)
+            {
+                if (word.Text.ToLower() == IndexSearch.Text.ToLower())
+                    PageDataGrid.ScrollIntoView(word);
+            }
         }
     }
 }
