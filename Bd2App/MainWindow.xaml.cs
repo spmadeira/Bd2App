@@ -311,10 +311,7 @@ namespace Bd2App
                 Transitioner.SelectedIndex = 0;
             }
 
-            // var item = ((List<PageRepresentation>)PageDataGrid.ItemsSource).FirstOrDefault(i => (i.Page == address.Page + 1 && i.Line == address.Line + 1));
-            // PageDataGrid.ScrollIntoView(item);
-
-            var page = Pages[address.Page]; //De indice 1 pra indice 0
+            var page = Pages[address.Page];
             foreach (var word in page)
             {
                 if (String.Equals(word.Text, IndexSearch.Text, StringComparison.CurrentCultureIgnoreCase))
